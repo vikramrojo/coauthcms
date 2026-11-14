@@ -79,7 +79,7 @@ export interface ContentType<F extends Fields = Fields> {
   readonly singleton?: boolean;
   /** Entries have an owner; the type must then have an `access` function. */
   readonly owned: boolean;
-  /** Fields conditions may name; each becomes a generated column (print-migration.ts prints it). */
+  /** Fields conditions may name; each becomes a generated column (cogens-print-migration prints it). */
   readonly indexed: readonly string[];
   /** The slug is unique among this type's entries. */
   readonly uniqueSlug: boolean;

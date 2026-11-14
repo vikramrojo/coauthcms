@@ -12,7 +12,7 @@
 -- koguma-upgrade.sql instead of this file.
 --
 -- Indexed fields of your types are not here: they are columns generated from
--- the entry's JSON, and `bun run print-migration <config>` prints their lines.
+-- the entry's JSON, and `cogens-print-migration <config>` prints their lines.
 
 CREATE TABLE IF NOT EXISTS entries (
   id TEXT PRIMARY KEY,

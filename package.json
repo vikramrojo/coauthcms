@@ -1,6 +1,6 @@
 {
   "name": "cogens",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A light multi-tenant content store for Cloudflare Workers: every entry may have an owner and every query passes an access check. Forked from Koguma.",
   "license": "MIT",
   "type": "module",
@@ -25,36 +25,56 @@
     "content-store"
   ],
   "engines": {
+    "node": ">=20",
     "bun": ">=1.4.4"
   },
   "packageManager": "bun@1.4.4",
   "exports": {
-    ".": "./src/core/index.ts",
-    "./admin": "./src/admin/index.ts",
-    "./auth": "./src/auth/index.ts",
-    "./testing": "./src/testing/index.ts",
-    "./migrations-tool": "./scripts/print-migration.ts",
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "default": "./dist/admin/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "default": "./dist/auth/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
+    "./migrations-tool": {
+      "types": "./dist/migrations-tool/index.d.ts",
+      "default": "./dist/migrations-tool/index.js"
+    },
     "./scripts/*": "./scripts/*",
     "./package.json": "./package.json",
     "./migrations/*": "./migrations/*"
   },
   "bin": {
-    "cogens-print-migration": "./scripts/print-migration.ts"
+    "cogens-print-migration": "./dist/migrations-tool/bin.js"
   },
   "files": [
+    "dist",
     "src",
     "migrations",
     "scripts",
     "editor",
     "LICENSE",
     "NOTICE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "test": "bun test",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "test": "bun run build && bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
-    "print-migration": "bun run scripts/print-migration.ts",
+    "print-migration": "bun run src/migrations-tool/bin.ts",
     "build:editor": "bun run scripts/build-admin-editor.ts",
+    "prepublishOnly": "bun run build && bun test",
     "example:migrate": "wrangler d1 migrations apply DB --local -c examples/worker/wrangler.jsonc",
     "example:dev": "wrangler dev -c examples/worker/wrangler.jsonc"
   },
@@ -84,5 +104,7 @@
     "remark-directive": "^4.0.0",
     "typescript": "^5.7.0",
     "wrangler": "^4.71.0"
-  }
+  },
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts"
 }

@@ -1,16 +1,17 @@
-#!/usr/bin/env bun
 /**
- * Prints the SQL a config's content types need in `entries`: a virtual generated
+ * `cogens/migrations-tool`: the SQL a config's content types need in `entries`: a virtual generated
  * column and an index for each indexed field, and a unique index on the slug for
  * the types that ask for one. The host's own migration holds these lines and startup checks the columns exist.
  *
+ * `cogens-print-migration <config>` (bin.ts) prints them for a config file:
+ *
  *   bunx cogens-print-migration site.config.ts
- *   bun run node_modules/cogens/scripts/print-migration.ts site.config.ts
+ *   npx cogens-print-migration site.config.mjs
  *
  * The config file's default export is `{ contentTypes }` (what `defineConfig` returns).
  */
-import type { ContentType } from '../src/core/config/define.ts';
-import { indexedColumn } from '../src/core/columns.ts';
+import type { ContentType } from '../core/config/define.ts';
+import { indexedColumn } from '../core/columns.ts';
 
 /** `ALTER TABLE ... ADD COLUMN` allows only VIRTUAL generated columns; SQLite can index them. */
 export function migrationLines(types: readonly ContentType<any>[]): string[] {
@@ -33,18 +34,4 @@ export function migrationLines(types: readonly ContentType<any>[]): string[] {
     );
   }
   return lines;
-}
-
-// Run under Bun; the declarations keep this file free of Node's types, which a Worker build does not have.
-declare const process: { argv: string[]; cwd(): string; exit(code: number): never };
-
-if ((import.meta as { main?: boolean }).main) {
-  const path = process.argv[2];
-  if (!path) {
-    console.error('Usage: bunx cogens-print-migration <config file>');
-    process.exit(1);
-  }
-  const module = await import(new URL(path, `file://${process.cwd()}/`).href);
-  const config = module.default as { contentTypes: ContentType<any>[] };
-  console.log(migrationLines(config.contentTypes).join('\n'));
 }

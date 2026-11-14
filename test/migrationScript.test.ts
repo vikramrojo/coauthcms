@@ -1,7 +1,7 @@
 /** Task 3.2: print-migration prints the column and index lines of a config, and startup checks them against the table. */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { ConfigError, contentType, createCms, field } from '../src/core/index.ts';
-import { migrationLines } from '../scripts/print-migration.ts';
+import { migrationLines } from '../src/migrations-tool/index.ts';
 import { admin, composer, page, score } from './sample.ts';
 import { createDb, type TestDb } from './support.ts';
 

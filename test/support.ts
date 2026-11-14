@@ -2,7 +2,7 @@
 import { Miniflare } from 'miniflare';
 import { readFileSync } from 'node:fs';
 import { contentType, field } from '../src/core/index.ts';
-import { migrationLines } from '../scripts/print-migration.ts';
+import { migrationLines } from '../src/migrations-tool/index.ts';
 
 /** The statements of a file under migrations/ (`auth/0001_sessions.sql` for the auth package's). */
 export function statements(file: string): string[] {

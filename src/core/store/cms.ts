@@ -160,7 +160,7 @@ async function check(db: D1Database, types: ContentType<any>[]): Promise<void> {
     for (const field of type.indexed) {
       if (!columns.has(indexedColumn(field))) {
         throw new ConfigError(
-          `Type "${type.id}" indexes "${field}", but the entries table has no column "${indexedColumn(field)}". Print the lines to apply with cogens-print-migration (scripts/print-migration.ts).`,
+          `Type "${type.id}" indexes "${field}", but the entries table has no column "${indexedColumn(field)}". Print the lines to apply with cogens-print-migration.`,
           type.id,
           field
         );

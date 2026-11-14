@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createTestDb, type TestDb } from '../src/testing/index.ts';
-import { migrationLines } from '../scripts/print-migration.ts';
+import { migrationLines } from '../src/migrations-tool/index.ts';
 
 let t: TestDb | undefined;
 afterEach(async () => { await t?.dispose(); t = undefined; });
@@ -24,6 +24,7 @@ test('createTestDb applies the package migrations, then the host files', async (
 
 test('the package exports the printer and the scripts by name', async () => {
   const tool = await import('cogens/migrations-tool');
-  expect(tool.migrationLines).toBe(migrationLines);
-  expect(import.meta.resolve('cogens/scripts/print-migration.ts')).toMatch(/scripts\/print-migration\.ts$/);
+  expect(tool.migrationLines([])).toEqual(migrationLines([]));
+  expect(import.meta.resolve('cogens/scripts/build-admin-editor.ts')).toMatch(/scripts\/build-admin-editor\.ts$/);
+  expect(import.meta.resolve('cogens')).toMatch(/dist\/core\/index\.js$/);
 });

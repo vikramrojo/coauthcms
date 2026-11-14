@@ -18,7 +18,7 @@ The package's `dependencies` are those three and no more; a test (`test/boundary
 
 It is a library you embed in your own Worker. It is not a hosted service, a standalone CMS with its own sign-in for end users, or a React dashboard: you supply the sign-in and say who is calling; the package supplies the store, the access checks and a small server-rendered admin. It was written for [Sinfon](https://sinfon.app), the first host, and is used there.
 
-Status: 0.2.0, pre-1.0. The API may change before 1.0.
+Status: 0.2.1, pre-1.0. The API may change before 1.0.
 
 ## Install
 
@@ -28,13 +28,15 @@ bun add cogens
 npm install cogens
 ```
 
-For bundlers that compile TypeScript, such as Wrangler (esbuild) and Bun. The package ships TypeScript source: `exports` point at `.ts` files, so there is no build step and no `dist/`. Node does not run `.ts` files without a loader, so import it from a Worker or another bundled project, not from plain Node. (A host that compiles with plain `tsc` to a Node target would need its own step; Workers hosts do not.)
+It runs in Cloudflare Workers (Wrangler), Node 20 or later (scripts, Vitest, any bundler) and Bun. The package ships compiled ES modules with type declarations in `dist/`, so none of them needs a TypeScript loader. The types name Cloudflare's `D1Database` and `R2Bucket`, so a TypeScript host adds `@cloudflare/workers-types` to its `types`.
+
+Two tools are not Node's: `scripts/build-admin-editor.ts` (the admin's editor bundle) uses `Bun.build` and runs under Bun only, and `cogens-print-migration` loads a `.ts` config only under Bun or a Node that strips types (see Migrations).
 
 To use an unreleased commit, pin it: `bun add github:vikramrojo/cogens#<commit>`.
 
 ## Quick start
 
-Define one owned type and read an entry back as its owner. You need [Bun](https://bun.sh) 1.4 or later.
+Define one owned type and read an entry back as its owner. This walk-through uses [Bun](https://bun.sh) 1.4 or later to run a `.ts` file; the package itself needs only Node 20 or later (or Bun, or Workers).
 
 ```sh
 mkdir hello && cd hello
@@ -337,7 +339,7 @@ const cms = createCms({ config, db: t.db });
 await t.dispose();
 ```
 
-`migrationLines(types)` returns the SQL lines `cogens-print-migration` prints for a list of content types, so a test can compare them with your migration file. The scripts also resolve by name: `cogens/scripts/print-migration.ts`.
+`migrationLines(types)` returns the SQL lines `cogens-print-migration` prints for a list of content types, so a test can compare them with your migration file. The editor build script resolves by name: `cogens/scripts/build-admin-editor.ts`.
 
 ## Migrations
 
@@ -350,8 +352,11 @@ SQL files a host applies, in this order (copy them into your Wrangler `migration
 A rule or `where` may name only the built-in columns and a type's `indexed` fields; an indexed field is a virtual generated column over the entry's JSON (SQLite's `ALTER TABLE ADD COLUMN` allows only virtual ones, and they can be indexed), plus a partial unique index on `(content_type, slug)` for types with `uniqueSlug`. Print them from a config file whose default export is `{ contentTypes }` (what `defineConfig` returns):
 
 ```sh
-bunx cogens-print-migration site.config.ts
+bunx --bun cogens-print-migration site.config.ts   # Bun: any config file, .ts included
+npx cogens-print-migration site.config.mjs      # Node: a .js or .mjs config
 ```
+
+The command's shebang is `node`, so plain `bunx` also runs it under Node; `bunx --bun` runs it under Bun. Under Node the command imports the config as written. A `.js` or `.mjs` config always works; a `.ts` config works only on a Node that strips types (22.18 or later, and 24), in a project whose `package.json` has `"type": "module"`, and only if its own imports resolve there. Otherwise use `bunx --bun`, or compile the config. The same lines come from `migrationLines(contentTypes)` in `cogens/migrations-tool`.
 
 Put the printed lines in a migration of your own. At startup, on first use, the store compares them with `PRAGMA table_xinfo(entries)` and fails naming the type and field if one is missing.
 
@@ -369,9 +374,13 @@ Put the printed lines in a migration of your own. At startup, on first use, the 
 
 ```sh
 bun install
+bun run build       # src/ to dist/ (tsc, tsconfig.build.json); the tests import the package by name, so they need it
 bun test            # the package's tests, the example Worker in Miniflare included
+bun run test        # build, then test
 bun run typecheck   # src, the example, the scripts
 ```
+
+`dist/` is not committed. `npm publish` runs `prepublishOnly` (build, then test), so a published package always has a fresh build.
 
 ## Contributing
 
