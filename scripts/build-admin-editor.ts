@@ -2,7 +2,7 @@
  * Builds the admin's markdown editor (Milkdown Crepe, as one static module) and
  * writes it where the host serves its static files:
  *
- *   bun run node_modules/coauthcms/scripts/build-admin-editor.ts <outDir>
+ *   bun run node_modules/coauthcms/scripts/build-admin-editor.ts <outDir> [--plugins <module>]
  *
  * writes <outDir>/admin-editor.js, admin-editor.css, admin-editor-dark.css and
  * admin-editor.LICENSES.txt (the licence texts of every package in the bundle,
@@ -10,9 +10,16 @@
  * default (`DEFAULT_ASSETS`), at the root of the host's static folder; serve
  * them elsewhere and pass `assets` to `createAdmin`.
  *
- * The build needs `@milkdown/crepe` and `remark-directive`, optional peer
- * dependencies of coauthcms: add them to the host (`bun add -d @milkdown/crepe
- * remark-directive`). Nothing in the Worker imports the editor or Crepe.
+ * `--plugins <module>` names a host file whose default export is a function
+ * `(builder) => void | Promise<void>`. The bundle calls it with the Crepe
+ * builder (`builder.editor` is the Milkdown editor) before the editor is
+ * created, so the host can add remark plugins, nodes and node views. The
+ * module imports its own Milkdown packages from the host's node_modules.
+ * Without it the editor has no syntax of the host's.
+ *
+ * The build needs `@milkdown/crepe`, an optional peer dependency of coauthcms:
+ * add it to the host (`bun add -d @milkdown/crepe`). Nothing in the Worker
+ * imports the editor or Crepe.
  */
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,12 +37,26 @@ function packageRoot(input: string): string | null {
   return input.slice(0, at + marker.length) + name;
 }
 
+const PLUGIN_MODULE = 'coauthcms-editor-plugin';
+
+/** Resolves the entry's `coauthcms-editor-plugin` import to the host's module, or to an empty one. */
+function pluginResolver(plugin: string | null): Bun.BunPlugin {
+  return {
+    name: 'coauthcms-editor-plugin',
+    setup(build) {
+      build.onResolve({ filter: /^coauthcms-editor-plugin$/ }, () =>
+        plugin ? { path: plugin } : { path: PLUGIN_MODULE, namespace: 'coauthcms-empty' });
+      build.onLoad({ filter: /.*/, namespace: 'coauthcms-empty' }, () => ({ contents: 'export default undefined;', loader: 'js' }));
+    }
+  };
+}
+
 type Notice = { name: string; version: string; license: string; text: string };
 
-async function notices(entries: string[], out: string): Promise<void> {
+async function notices(entries: string[], out: string, plugin: string | null): Promise<void> {
   const roots = new Set<string>();
   for (const entry of entries) {
-    const result = await Bun.build({ entrypoints: [entry], target: 'browser', minify: true, metafile: true });
+    const result = await Bun.build({ entrypoints: [entry], target: 'browser', minify: true, metafile: true, plugins: [pluginResolver(plugin)] });
     if (!result.success || !result.metafile) throw new Error(`Could not bundle ${entry}: ${result.logs.join('\n')}`);
     for (const input of Object.keys(result.metafile.inputs)) {
       const root = packageRoot(isAbsolute(input) ? input : resolve(process.cwd(), input));
@@ -75,7 +96,7 @@ function crepeFolder(): string {
   let dir = dirname(Bun.resolveSync('@milkdown/crepe', HERE));
   while (!existsSync(join(dir, 'package.json')) || JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).name !== '@milkdown/crepe') {
     const up = dirname(dir);
-    if (up === dir) throw new Error('@milkdown/crepe is not installed. Add it: bun add -d @milkdown/crepe remark-directive');
+    if (up === dir) throw new Error('@milkdown/crepe is not installed. Add it: bun add -d @milkdown/crepe');
     dir = up;
   }
   return dir;
@@ -88,9 +109,25 @@ function stylesheet(name: string, scratch: string): string {
   return out;
 }
 
-const outArg = process.argv[2];
+const args = process.argv.slice(2);
+const flag = args.indexOf('--plugins');
+let pluginArg: string | null = null;
+if (flag >= 0) {
+  pluginArg = args[flag + 1] ?? null;
+  if (!pluginArg) {
+    console.error('--plugins needs a module path.');
+    process.exit(1);
+  }
+  args.splice(flag, 2);
+}
+const outArg = args[0];
 if (!outArg) {
-  console.error('Usage: bun run scripts/build-admin-editor.ts <outDir>');
+  console.error('Usage: bun run scripts/build-admin-editor.ts <outDir> [--plugins <module>]');
+  process.exit(1);
+}
+const plugin = pluginArg ? resolve(process.cwd(), pluginArg) : null;
+if (plugin && !existsSync(plugin)) {
+  console.error(`Plugin module not found: ${plugin}`);
   process.exit(1);
 }
 const out = resolve(process.cwd(), outArg);
@@ -99,7 +136,8 @@ mkdirSync(out, { recursive: true });
 await build(join(HERE, 'entry.js'), out, 'admin-editor.js', {
   format: 'esm',
   target: 'browser',
-  banner: '/*! Third-party notices: /admin-editor.LICENSES.txt */'
+  banner: '/*! Third-party notices: /admin-editor.LICENSES.txt */',
+  plugins: [pluginResolver(plugin)]
 });
 const scratch = mkdtempSync(join(tmpdir(), 'coauthcms-editor-'));
 try {
@@ -107,7 +145,7 @@ try {
   const dark = stylesheet('editor-dark.css', scratch);
   await build(light, out, 'admin-editor.css', {});
   await build(dark, out, 'admin-editor-dark.css', {});
-  await notices([join(HERE, 'entry.js'), light, dark], join(out, 'admin-editor.LICENSES.txt'));
+  await notices([join(HERE, 'entry.js'), light, dark], join(out, 'admin-editor.LICENSES.txt'), plugin);
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

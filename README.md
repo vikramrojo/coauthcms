@@ -15,15 +15,15 @@ One package, three entry points:
 
 The package's `dependencies` are those three and no more; a test (`test/boundary.test.ts`) fails if core imports a fourth, if admin imports anything of ours but core, if auth imports core or admin, or if anything outside `src/core/store` reaches the SQL layer. No React anywhere.
 
-Status: 0.1.0, private, not published to npm. Pre-1.0: the API may change.
+It is a library you embed in your own Worker. It is not a hosted service, a standalone CMS with its own sign-in for end users, or a React dashboard: you supply the sign-in and say who is calling; the package supplies the store, the access checks and a small server-rendered admin. It was written for [Sinfon](https://sinfon.app), the first host, and is used there.
+
+Status: 0.1.0, pre-release. The API may change before 1.0. It is not published to npm.
 
 ## Install
 
 ```sh
-bun add git+ssh://git@github.com/vikramrojo/coauthcms.git#<commit>
+bun add github:vikramrojo/coauthcms#<commit>
 ```
-
-While the repository is private this is the form that works: Bun fetches `github:owner/repo#ref` from GitHub's unauthenticated tarball API, which answers 404 for a private repository, while `git+ssh` uses your SSH key. Once it is public, `bun add github:vikramrojo/coauthcms#<commit>` does too.
 
 Pin a commit. The package ships TypeScript source: `exports` point at `.ts` files, which Bun and Wrangler's esbuild bundle as they are, so there is no build step and no `dist/`. (A host that compiles with plain `tsc` to a Node target would need its own step; Workers hosts do not.)
 
@@ -34,7 +34,7 @@ Define one owned type and read an entry back as its owner. You need [Bun](https:
 ```sh
 mkdir hello && cd hello
 bun init -y
-bun add git+ssh://git@github.com/vikramrojo/coauthcms.git#<commit>
+bun add github:vikramrojo/coauthcms#<commit>
 bun add -d miniflare @cloudflare/workers-types
 ```
 
@@ -101,13 +101,13 @@ The `examples/worker` folder in this repository is the same idea as a Worker: a 
 
 ```ts
 contentType({
-  id: 'score',                 // lowercase letter first; letters, digits, - and _
-  name: 'Scores',
+  id: 'article',                 // lowercase letter first; letters, digits, - and _
+  name: 'Articles',
   displayField: 'title',
   owned: true,                 // entries have an owner_id; the type must then have `access`
   uniqueSlug: true,            // slug unique within the type (a partial unique index)
   indexed: ['visibility'],     // fields rules and `where` may name (see Migrations)
-  parent: 'notebook',          // children of another type: parent_id, sort_key
+  parent: 'series',          // children of another type: parent_id, sort_key
   mirrors: ['status'],         // a child copies its parent's published state (below)
   access(principal, { can }) { /* ... */ },
   beforeWrite(ctx) { /* ... */ },
@@ -245,14 +245,58 @@ Options: `externalCollections` (read-only views over your own tables, with `list
 
 Static files the admin links, which your Worker serves (default URLs in `DEFAULT_ASSETS`): Largen's `largen.css` and `largen-theme-dark.css` (the `largen` package; without them the pages are plain HTML), and the markdown editor: `admin-editor.js`, `admin-editor.css` and `admin-editor-dark.css`. The admin's own script and style are served by the admin itself at `<mount>/assets/`. If the editor does not load, a markdown field is a plain textarea.
 
-Build the editor into your static folder (it needs `@milkdown/crepe` and `remark-directive`, optional peer dependencies):
+Build the editor into your static folder (it needs `@milkdown/crepe`, an optional peer dependency):
 
 ```sh
-bun add -d @milkdown/crepe remark-directive
+bun add -d @milkdown/crepe
 bun run node_modules/coauthcms/scripts/build-admin-editor.ts public
 ```
 
-It writes `admin-editor.js`, `admin-editor.css`, `admin-editor-dark.css` and `admin-editor.LICENSES.txt`, the licence texts of the packages bundled (the module's banner names it; serve it beside the module). The editor also understands three directives, `:bar[9]`, `:staff[2]` and `::excerpt{from=5 to=8}`, as chips (`editor/directives.js`); text that is not one of them is left as it was.
+It writes `admin-editor.js`, `admin-editor.css`, `admin-editor-dark.css` and `admin-editor.LICENSES.txt`, the licence texts of the packages bundled (the module's banner names it; serve it beside the module). The editor has no syntax of its own beyond markdown; a host adds its own with a plugin module.
+
+### Editor plugins
+
+`build-admin-editor.ts <outDir> --plugins <module>` bundles a host file into the editor. The module's default export is a function `(builder) => void | Promise<void>`. It is called once per editor with Crepe's builder (`builder.editor` is the Milkdown editor) before the editor is created, so it can add remark plugins, nodes and node views. The module imports its own Milkdown packages (and any remark plugin) from the host's `node_modules`, so add them to the host (`bun add -d @milkdown/kit remark-directive`). Without `--plugins` the bundle contains none of this.
+
+For example, `:mention[ada]` as a chip that saves as the same text:
+
+```js
+// editor-plugin.js
+import { remarkPluginsCtx } from '@milkdown/kit/core';
+import { $node } from '@milkdown/kit/utils';
+import remarkDirective from 'remark-directive';
+
+const labelOf = node => (node.children || []).map(c => c.value ?? '').join('');
+
+const mention = $node('mention', () => ({
+  group: 'inline',
+  inline: true,
+  atom: true,
+  attrs: { name: { default: '' } },
+  parseDOM: [{ tag: 'span[data-mention]', getAttrs: dom => ({ name: dom.getAttribute('data-mention') }) }],
+  toDOM: node => ['span', { 'data-mention': node.attrs.name, contenteditable: 'false' }, `@${node.attrs.name}`],
+  parseMarkdown: {
+    match: node => node.type === 'textDirective' && node.name === 'mention',
+    runner: (state, node, type) => { state.addNode(type, { name: labelOf(node) }); }
+  },
+  toMarkdown: {
+    match: node => node.type.name === 'mention',
+    runner: (state, node) => { state.addNode('textDirective', [{ type: 'text', value: node.attrs.name }], undefined, { name: 'mention', attributes: {} }); }
+  }
+}));
+
+export default function (builder) {
+  builder.editor
+    .config(ctx => ctx.update(remarkPluginsCtx, plugins => [...plugins, { plugin: remarkDirective, options: {} }]))
+    .use(mention);
+}
+```
+
+```sh
+bun run node_modules/coauthcms/scripts/build-admin-editor.ts public --plugins ./editor-plugin.js
+```
+
+`remark-directive` also reads any other `:word` in prose as a directive, so a real plugin should turn the ones it does not own back into text, as `test/fixtures/mention-plugin.js` does. The editor module's `createEditor` returns `{ getMarkdown, editor }`.
 
 ## The auth package
 
@@ -286,7 +330,7 @@ bunx coauthcms-print-migration site.config.ts
 
 Put the printed lines in a migration of your own. At startup, on first use, the store compares them with `PRAGMA table_xinfo(entries)` and fails naming the type and field if one is missing.
 
-**A database that already has Koguma's `entries` and `assets`** (its own `0001`) must not apply `0001_entries.sql`, whose `CREATE TABLE IF NOT EXISTS` would skip the tables and leave the new columns missing. Apply `migrations/koguma-upgrade.sql` instead, which adds the four columns, `assets.owner_id` and the indexes. A host that already added those columns itself (as Sinfon did) skips both. The auth tables are independent of either. Nothing in these files names any host's tables.
+**A database that already has Koguma's `entries` and `assets`** (its own `0001`) must not apply `0001_entries.sql`, whose `CREATE TABLE IF NOT EXISTS` would skip the tables and leave the new columns missing. Apply `migrations/koguma-upgrade.sql` instead, which adds the four columns, `assets.owner_id` and the indexes. A host that already added those columns itself skips both. The auth tables are independent of either. Nothing in these files names any host's tables.
 
 ## The import boundary
 
@@ -303,6 +347,14 @@ bun install
 bun test            # the package's tests, the example Worker in Miniflare included
 bun run typecheck   # src, the example, the scripts
 ```
+
+## Contributing
+
+Issues are welcome: bug reports, questions, and notes on where the access rules or the docs surprised you. Pull requests are welcome by arrangement: open an issue first to agree the change, since the package is small on purpose (see the import boundary above). Run `bun test` and `bun run typecheck` before sending anything.
+
+## Security
+
+Please report a vulnerability privately through GitHub's private vulnerability reporting (the Security tab of this repository, "Report a vulnerability"), not in a public issue. The access engine and the session code are the parts where a flaw matters most.
 
 ## Licence
 

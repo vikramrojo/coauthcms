@@ -75,7 +75,7 @@ describe('field validation', () => {
     expect(ok(field.boolean('x'), true)).toBe(true);
     expect(ok(field.date('x'), '2026-11-14T10:00:00Z')).toBe(true);
     expect(ok(field.date('x'), 'yesterday')).toBe(false);
-    expect(ok(field.url('x'), 'https://sinfon.app')).toBe(true);
+    expect(ok(field.url('x'), 'https://example.com')).toBe(true);
     expect(ok(field.email('x'), 'nope')).toBe(false);
     expect(ok(field.select('x', { options: ['a', 'b'] }), 'c')).toBe(false);
     expect(ok(field.refs('y', 'x'), ['1', '2'])).toBe(true);

@@ -8,7 +8,8 @@ import { cursor } from '@milkdown/crepe/feature/cursor';
 import { linkTooltip } from '@milkdown/crepe/feature/link-tooltip';
 import { listItem } from '@milkdown/crepe/feature/list-item';
 import { toolbar } from '@milkdown/crepe/feature/toolbar';
-import { directiveSupport } from './directives.js';
+// Resolved by scripts/build-admin-editor.ts: the host's plugin module given by --plugins, else a module with no default.
+import plugin from 'coauthcms-editor-plugin';
 
 /** Puts an editor in `root` holding `markdown`; resolves to an object whose getMarkdown() is the text now. */
 export async function createEditor(root, markdown) {
@@ -18,8 +19,8 @@ export async function createEditor(root, markdown) {
     .addFeature(linkTooltip)
     .addFeature(listItem)
     .addFeature(toolbar);
-  // A notebook's text (`:bar[9]`, `:staff[2]`, `::excerpt{...}`) opens as chips and saves as the same directives.
-  directiveSupport(builder.editor);
+  // The host's own syntax, if it gave a plugin module: called with the builder before it is created.
+  if (typeof plugin === 'function') await plugin(builder);
   await builder.create();
-  return { getMarkdown: () => builder.getMarkdown() };
+  return { getMarkdown: () => builder.getMarkdown(), editor: builder.editor };
 }
