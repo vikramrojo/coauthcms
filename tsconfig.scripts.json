@@ -3,10 +3,12 @@
   "compilerOptions": {
     "types": [
       "bun",
-      "node"
+      "node",
+      "@cloudflare/workers-types"
     ]
   },
   "include": [
-    "scripts"
+    "scripts",
+    "src/testing"
   ]
 }

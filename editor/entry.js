@@ -11,16 +11,18 @@ import { toolbar } from '@milkdown/crepe/feature/toolbar';
 // Resolved by scripts/build-admin-editor.ts: the host's plugin module given by --plugins, else a module with no default.
 import plugin from 'coauthcms-editor-plugin';
 
-/** Puts an editor in `root` holding `markdown`; resolves to an object whose getMarkdown() is the text now. */
-export async function createEditor(root, markdown) {
+/**
+ * Puts an editor in `root` holding `markdown`; `context` is `{ type, field }`, the content type id and field name of the
+ * text area, passed on to the host's plugin. Resolves to an object whose getMarkdown() is the text now. */
+export async function createEditor(root, markdown, context = { type: '', field: '' }) {
   const builder = new CrepeBuilder({ root, defaultValue: markdown })
     .addFeature(blockEdit)
     .addFeature(cursor)
     .addFeature(linkTooltip)
     .addFeature(listItem)
     .addFeature(toolbar);
-  // The host's own syntax, if it gave a plugin module: called with the builder before it is created.
-  if (typeof plugin === 'function') await plugin(builder);
+  // The host's own syntax, if it gave a plugin module: called with the builder and the field's context before it is created.
+  if (typeof plugin === 'function') await plugin(builder, context);
   await builder.create();
   return { getMarkdown: () => builder.getMarkdown(), editor: builder.editor };
 }

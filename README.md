@@ -4,20 +4,21 @@ A light multi-tenant content store for Cloudflare Workers (D1, R2, Hono). Every 
 
 It is a fork of [Koguma](https://github.com/m4ttheweric/koguma) (MIT). Koguma's database and config code is the starting point; the access engine, the principal model, the server-rendered admin and the session tables are new. See `NOTICE`.
 
-One package, three entry points:
+One package, these entry points:
 
 | Import | What it is | Runtime dependencies it uses |
 | --- | --- | --- |
 | `coauthcms` | The store: content types and fields, access rules, `createCms`, `content.as(principal)`, media, the policy test helper | `hono`, `@casl/ability`, `@cfworker/json-schema` |
 | `coauthcms/admin` | The admin: server-rendered Hono pages that are an ordinary client of `content.as` | `hono` and core |
 | `coauthcms/auth` | Sessions on D1 rows, one-time handoff tokens, the operator's password sign-in | `hono` |
-| `coauthcms/testing` | The policy matrix helper alone (also exported from `coauthcms`) | |
+| `coauthcms/testing` | The policy matrix helper (also exported from `coauthcms`) and `createTestDb`, a Miniflare D1 with the migrations applied | none; `createTestDb` needs `miniflare` in the host |
+| `coauthcms/migrations-tool` | `migrationLines`, the function behind `coauthcms-print-migration` | core's types only |
 
 The package's `dependencies` are those three and no more; a test (`test/boundary.test.ts`) fails if core imports a fourth, if admin imports anything of ours but core, if auth imports core or admin, or if anything outside `src/core/store` reaches the SQL layer. No React anywhere.
 
 It is a library you embed in your own Worker. It is not a hosted service, a standalone CMS with its own sign-in for end users, or a React dashboard: you supply the sign-in and say who is calling; the package supplies the store, the access checks and a small server-rendered admin. It was written for [Sinfon](https://sinfon.app), the first host, and is used there.
 
-Status: 0.1.0, pre-release. The API may change before 1.0. It is not published to npm.
+Status: 0.1.1, pre-release. The API may change before 1.0. It is not published to npm.
 
 ## Install
 
@@ -256,7 +257,9 @@ It writes `admin-editor.js`, `admin-editor.css`, `admin-editor-dark.css` and `ad
 
 ### Editor plugins
 
-`build-admin-editor.ts <outDir> --plugins <module>` bundles a host file into the editor. The module's default export is a function `(builder) => void | Promise<void>`. It is called once per editor with Crepe's builder (`builder.editor` is the Milkdown editor) before the editor is created, so it can add remark plugins, nodes and node views. The module imports its own Milkdown packages (and any remark plugin) from the host's `node_modules`, so add them to the host (`bun add -d @milkdown/kit remark-directive`). Without `--plugins` the bundle contains none of this.
+`build-admin-editor.ts <outDir> --plugins <module>` bundles a host file into the editor. The module's default export is a function `(builder, context) => void | Promise<void>`. It is called once per editor with Crepe's builder (`builder.editor` is the Milkdown editor) and `context = { type, field }`, the content type id and the field name of the text area, before the editor is created, so it can add remark plugins, nodes and node views. The admin renders each markdown text area with `data-type` and `data-field` for this. A plugin's syntax applies to every markdown field unless it checks the context: a plugin that ignores the second argument keeps working, and an ordinary field's text is saved unchanged only if the syntax was not added to it.
+
+`--plugins` paths resolve from the current working directory, not from the build script or the package. The module imports its own Milkdown packages (and any remark plugin) from the host's `node_modules`, so add them to the host (`bun add -d @milkdown/kit remark-directive`). Without `--plugins` the bundle contains none of this.
 
 For example, `:mention[ada]` as a chip that saves as the same text:
 
@@ -285,7 +288,9 @@ const mention = $node('mention', () => ({
   }
 }));
 
-export default function (builder) {
+export default function (builder, context) {
+  // Only the `note` type's `body` field has mentions; any other field keeps its text exactly as stored.
+  if (context.type !== 'note' || context.field !== 'body') return;
   builder.editor
     .config(ctx => ctx.update(remarkPluginsCtx, plugins => [...plugins, { plugin: remarkDirective, options: {} }]))
     .use(mention);
@@ -313,6 +318,22 @@ import {
 - **`createPrincipalResolver`** is the one function that learns who a request is: an admin session gives `{ kind: 'admin' }`; a session of another kind goes through your `SessionSource` (`config(env)` gives the cookie and key, `principal(session, env)` your principal or null); anything else is null, and you decide anonymous or 401.
 
 The package never learns what an owner is. It imports neither core nor admin.
+
+## Testing with a database
+
+`createTestDb` (from `coauthcms/testing`) starts a Miniflare D1 and R2 bucket, applies the package's own migrations (`0001_entries.sql`, `auth/0001_sessions.sql`) and then each SQL file you list (paths from the working directory), and returns `{ db, r2, dispose }`. Miniflare is an optional peer dependency, imported only when the function runs: `bun add -d miniflare`.
+
+```ts
+import { createTestDb } from 'coauthcms/testing';
+import { migrationLines } from 'coauthcms/migrations-tool';
+
+const t = await createTestDb({ migrations: ['migrations/0002_my_types.sql'] });
+const cms = createCms({ config, db: t.db });
+// ...
+await t.dispose();
+```
+
+`migrationLines(types)` returns the SQL lines `coauthcms-print-migration` prints for a list of content types, so a test can compare them with your migration file. The scripts also resolve by name: `coauthcms/scripts/print-migration.ts`.
 
 ## Migrations
 

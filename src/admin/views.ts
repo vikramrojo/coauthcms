@@ -202,7 +202,7 @@ export interface Column {
 }
 
 /** The label and control (or text) of each row, as a definition list the form's layout styles. */
-function fieldRows(rows: Row[], columns: Column[], refs: ResolveRef): Html {
+function fieldRows(rows: Row[], columns: Column[], refs: ResolveRef, type?: string): Html {
   return html`<dl class="fields">${columns.map(col =>
     col.editable
       ? html`<dt><label for="f-${col.name}">${col.label}</label></dt><dd><input id="f-${col.name}" type="text" name="${col.name}" value="${col.value ?? ''}"></dd>`
@@ -210,7 +210,7 @@ function fieldRows(rows: Row[], columns: Column[], refs: ResolveRef): Html {
   )}${rows.map(row => {
     const error = row.error ? html`<small data-tone="danger" data-variant="ghost">${row.name} ${row.error}</small>` : '';
     return row.editable
-      ? html`<dt><label for="f-${row.name}">${row.meta.label}</label></dt><dd>${renderField({ name: row.name, meta: row.meta, value: row.value, refs }, 'edit')}${error}</dd>`
+      ? html`<dt><label for="f-${row.name}">${row.meta.label}</label></dt><dd>${renderField({ name: row.name, type, meta: row.meta, value: row.value, refs }, 'edit')}${error}</dd>`
       : html`<dt>${row.meta.label}</dt><dd>${renderField({ name: row.name, meta: row.meta, value: row.value, refs }, 'read')}${error}</dd>`;
   })}</dl>`;
 }
@@ -238,7 +238,7 @@ export function entryPage(shell: Shell, input: EntryInput): Html {
   const base = `${mount}/t/${type.id}`;
   const title = entry ? String(entry.data[type.displayField] ?? '') || entry.slug || entry.id : `New ${type.name.replace(/s$/, '')}`;
   const action = entry ? `${base}/${entry.id}` : base;
-  const fields = fieldRows(input.rows, input.columns, input.refs);
+  const fields = fieldRows(input.rows, input.columns, input.refs, type.id);
   const markdown = input.rows.some(r => r.editable && r.meta.fieldType === 'markdown');
   return page(shell, {
     title,

@@ -11,9 +11,10 @@
  * them elsewhere and pass `assets` to `createAdmin`.
  *
  * `--plugins <module>` names a host file whose default export is a function
- * `(builder) => void | Promise<void>`. The bundle calls it with the Crepe
- * builder (`builder.editor` is the Milkdown editor) before the editor is
- * created, so the host can add remark plugins, nodes and node views. The
+ * `(builder, context) => void | Promise<void>`. The bundle calls it with the
+ * Crepe builder (`builder.editor` is the Milkdown editor) and `context = { type, field }`
+ * (the content type id and field name of the text area) before the editor is
+ * created, and the path resolves from the current working directory, so the host can add remark plugins, nodes and node views. The
  * module imports its own Milkdown packages from the host's node_modules.
  * Without it the editor has no syntax of the host's.
  *

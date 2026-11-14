@@ -1,6 +1,6 @@
 {
   "name": "coauthcms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A light multi-tenant content store for Cloudflare Workers: every entry may have an owner and every query passes an access check. Forked from Koguma.",
   "license": "MIT",
@@ -18,7 +18,9 @@
     ".": "./src/core/index.ts",
     "./admin": "./src/admin/index.ts",
     "./auth": "./src/auth/index.ts",
-    "./testing": "./src/core/testing/index.ts",
+    "./testing": "./src/testing/index.ts",
+    "./migrations-tool": "./scripts/print-migration.ts",
+    "./scripts/*": "./scripts/*",
     "./package.json": "./package.json",
     "./migrations/*": "./migrations/*"
   },
@@ -48,9 +50,13 @@
     "hono": "~4.12.2"
   },
   "peerDependencies": {
-    "@milkdown/crepe": "^7.23.0"
+    "@milkdown/crepe": "^7.23.0",
+    "miniflare": "^4.20260301.1"
   },
   "peerDependenciesMeta": {
+    "miniflare": {
+      "optional": true
+    },
     "@milkdown/crepe": {
       "optional": true
     }

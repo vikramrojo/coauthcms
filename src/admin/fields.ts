@@ -38,6 +38,8 @@ export type ResolveRef = (type: string, id: string) => RefTarget;
 
 export interface RenderInput {
   name: string;
+  /** The content type id the field belongs to; a markdown text area carries it as `data-type` for the editor plugin. */
+  type?: string;
   meta: FieldMeta;
   value: unknown;
   refs: ResolveRef;
@@ -132,7 +134,7 @@ ${ids}</textarea>`;
 
 const markdown: Renderer = {
   // The editor, when it loads, takes the place of this text area and writes back to it; without it this is the field.
-  edit: ({ name, value }) => html`<textarea id="${idOf(name)}" name="${name}" rows="14" data-markdown>
+  edit: ({ name, type, value }) => html`<textarea id="${idOf(name)}" name="${name}" rows="14" data-markdown${type === undefined ? '' : html` data-type="${type}"`} data-field="${name}">
 ${asText(value)}</textarea>`,
   read: ({ value }) => (present(value) ? html`<pre>
 ${asText(value)}</pre>` : MUTED)

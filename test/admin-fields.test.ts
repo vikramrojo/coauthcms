@@ -11,6 +11,11 @@ const ESCAPED = '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;';
 const draw = async (builder: FieldBuilder<any, any>, value: unknown, mode: 'edit' | 'read', resolve = refs) =>
   String(await renderField({ name: 'f', meta: builder.meta, value, refs: resolve }, mode));
 
+test('a markdown field drawn with its type carries data-type and data-field for the editor plugin', async () => {
+  const out = String(await renderField({ name: 'body', type: 'note', meta: field.markdown('M').meta, value: 'x', refs: () => ({ href: '', label: '' }) }, 'edit'));
+  expect(out).toBe('<textarea id="f-body" name="body" rows="14" data-markdown data-type="note" data-field="body">\nx</textarea>');
+});
+
 describe('text', () => {
   test('edit and read', async () => {
     expect(await draw(field.text('T'), 'Hello', 'edit')).toBe('<input id="f-f" type="text" name="f" value="Hello">');
@@ -114,12 +119,12 @@ describe('reference', () => {
 
 describe('markdown', () => {
   test('edit is a text area the editor can take over; read is escaped text, never markup', async () => {
-    expect(await draw(field.markdown('M'), `# Hi\n${SCRIPT}`, 'edit')).toBe(`<textarea id="f-f" name="f" rows="14" data-markdown>\n# Hi\n${ESCAPED}</textarea>`);
+    expect(await draw(field.markdown('M'), `# Hi\n${SCRIPT}`, 'edit')).toBe(`<textarea id="f-f" name="f" rows="14" data-markdown data-field="f">\n# Hi\n${ESCAPED}</textarea>`);
     expect(await draw(field.markdown('M'), `# Hi\n${SCRIPT}`, 'read')).toBe(`<pre>\n# Hi\n${ESCAPED}</pre>`);
   });
   test('a text area closing in the value cannot end the field early', async () => {
     expect(await draw(field.markdown('M'), '</textarea><b>x</b>', 'edit')).toBe(
-      '<textarea id="f-f" name="f" rows="14" data-markdown>\n&lt;/textarea&gt;&lt;b&gt;x&lt;/b&gt;</textarea>'
+      '<textarea id="f-f" name="f" rows="14" data-markdown data-field="f">\n&lt;/textarea&gt;&lt;b&gt;x&lt;/b&gt;</textarea>'
     );
   });
 });

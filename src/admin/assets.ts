@@ -42,7 +42,7 @@ export const ADMIN_JS = `(function () {
       var host = document.createElement('div');
       host.className = 'editor';
       area.after(host);
-      editor.createEditor(host, area.value).then(function (instance) {
+      editor.createEditor(host, area.value, { type: area.getAttribute('data-type') || '', field: area.getAttribute('data-field') || area.name }).then(function (instance) {
         area.style.display = 'none';
         area.form.addEventListener('submit', function () { area.value = instance.getMarkdown(); });
       }).catch(function () { host.remove(); });

@@ -29,6 +29,21 @@ describe('the admin editor build', () => {
     }
   }, 120_000);
 
+  test('the editor passes the plugin the field context, and the admin script reads it from the text area', async () => {
+    const out = build('--plugins', join(root, 'test/fixtures/scoped-plugin.js'));
+    try {
+      const js = readFileSync(join(out, 'admin-editor.js'), 'utf8');
+      // The minified bundle still holds the plugin's own comparisons and passes a second argument to it.
+      expect(js).toContain('"note"');
+      expect(js).toMatch(/await \w+\(\w+,\w+\)|\w+\(\w+,\w+\)/);
+      const { ADMIN_JS } = await import('../src/admin/assets.ts');
+      expect(ADMIN_JS).toContain("createEditor(host, area.value, { type: area.getAttribute('data-type')");
+      expect(readFileSync(join(root, 'editor/entry.js'), 'utf8')).toContain('await plugin(builder, context)');
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  }, 120_000);
+
   test('a missing plugin module stops the build', () => {
     const out = mkdtempSync(join(tmpdir(), 'coauthcms-editor-test-'));
     const run = Bun.spawnSync(['bun', 'run', join(root, 'scripts/build-admin-editor.ts'), out, '--plugins', join(out, 'nope.js')], { cwd: root });
