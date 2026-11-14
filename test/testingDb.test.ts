@@ -9,7 +9,7 @@ let t: TestDb | undefined;
 afterEach(async () => { await t?.dispose(); t = undefined; });
 
 test('createTestDb applies the package migrations, then the host files', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'coauthcms-testdb-'));
+  const dir = mkdtempSync(join(tmpdir(), 'cogens-testdb-'));
   try {
     const file = join(dir, '0002_host.sql');
     writeFileSync(file, '-- host\nCREATE TABLE host_things (id TEXT PRIMARY KEY);\nINSERT INTO host_things (id) VALUES (\'a\');');
@@ -23,7 +23,7 @@ test('createTestDb applies the package migrations, then the host files', async (
 });
 
 test('the package exports the printer and the scripts by name', async () => {
-  const tool = await import('coauthcms/migrations-tool');
+  const tool = await import('cogens/migrations-tool');
   expect(tool.migrationLines).toBe(migrationLines);
-  expect(import.meta.resolve('coauthcms/scripts/print-migration.ts')).toMatch(/scripts\/print-migration\.ts$/);
+  expect(import.meta.resolve('cogens/scripts/print-migration.ts')).toMatch(/scripts\/print-migration\.ts$/);
 });

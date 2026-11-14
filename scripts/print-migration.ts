@@ -4,8 +4,8 @@
  * column and an index for each indexed field, and a unique index on the slug for
  * the types that ask for one. The host's own migration holds these lines and startup checks the columns exist.
  *
- *   bunx coauthcms-print-migration site.config.ts
- *   bun run node_modules/coauthcms/scripts/print-migration.ts site.config.ts
+ *   bunx cogens-print-migration site.config.ts
+ *   bun run node_modules/cogens/scripts/print-migration.ts site.config.ts
  *
  * The config file's default export is `{ contentTypes }` (what `defineConfig` returns).
  */
@@ -41,7 +41,7 @@ declare const process: { argv: string[]; cwd(): string; exit(code: number): neve
 if ((import.meta as { main?: boolean }).main) {
   const path = process.argv[2];
   if (!path) {
-    console.error('Usage: bunx coauthcms-print-migration <config file>');
+    console.error('Usage: bunx cogens-print-migration <config file>');
     process.exit(1);
   }
   const module = await import(new URL(path, `file://${process.cwd()}/`).href);

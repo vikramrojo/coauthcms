@@ -1,4 +1,4 @@
-# coauthcms
+# cogens
 
 A light multi-tenant content store for Cloudflare Workers (D1, R2, Hono). Every entry may have an owner, and every query passes an access check: you cannot write a read or a write without saying who is calling, and a read the caller may not make answers as a missing row.
 
@@ -8,25 +8,29 @@ One package, these entry points:
 
 | Import | What it is | Runtime dependencies it uses |
 | --- | --- | --- |
-| `coauthcms` | The store: content types and fields, access rules, `createCms`, `content.as(principal)`, media, the policy test helper | `hono`, `@casl/ability`, `@cfworker/json-schema` |
-| `coauthcms/admin` | The admin: server-rendered Hono pages that are an ordinary client of `content.as` | `hono` and core |
-| `coauthcms/auth` | Sessions on D1 rows, one-time handoff tokens, the operator's password sign-in | `hono` |
-| `coauthcms/testing` | The policy matrix helper (also exported from `coauthcms`) and `createTestDb`, a Miniflare D1 with the migrations applied | none; `createTestDb` needs `miniflare` in the host |
-| `coauthcms/migrations-tool` | `migrationLines`, the function behind `coauthcms-print-migration` | core's types only |
+| `cogens` | The store: content types and fields, access rules, `createCms`, `content.as(principal)`, media, the policy test helper | `hono`, `@casl/ability`, `@cfworker/json-schema` |
+| `cogens/admin` | The admin: server-rendered Hono pages that are an ordinary client of `content.as` | `hono` and core |
+| `cogens/auth` | Sessions on D1 rows, one-time handoff tokens, the operator's password sign-in | `hono` |
+| `cogens/testing` | The policy matrix helper (also exported from `cogens`) and `createTestDb`, a Miniflare D1 with the migrations applied | none; `createTestDb` needs `miniflare` in the host |
+| `cogens/migrations-tool` | `migrationLines`, the function behind `cogens-print-migration` | core's types only |
 
 The package's `dependencies` are those three and no more; a test (`test/boundary.test.ts`) fails if core imports a fourth, if admin imports anything of ours but core, if auth imports core or admin, or if anything outside `src/core/store` reaches the SQL layer. No React anywhere.
 
 It is a library you embed in your own Worker. It is not a hosted service, a standalone CMS with its own sign-in for end users, or a React dashboard: you supply the sign-in and say who is calling; the package supplies the store, the access checks and a small server-rendered admin. It was written for [Sinfon](https://sinfon.app), the first host, and is used there.
 
-Status: 0.1.1, pre-release. The API may change before 1.0. It is not published to npm.
+Status: 0.2.0, pre-1.0. The API may change before 1.0.
 
 ## Install
 
 ```sh
-bun add github:vikramrojo/coauthcms#<commit>
+bun add cogens
+# or
+npm install cogens
 ```
 
-Pin a commit. The package ships TypeScript source: `exports` point at `.ts` files, which Bun and Wrangler's esbuild bundle as they are, so there is no build step and no `dist/`. (A host that compiles with plain `tsc` to a Node target would need its own step; Workers hosts do not.)
+For bundlers that compile TypeScript, such as Wrangler (esbuild) and Bun. The package ships TypeScript source: `exports` point at `.ts` files, so there is no build step and no `dist/`. Node does not run `.ts` files without a loader, so import it from a Worker or another bundled project, not from plain Node. (A host that compiles with plain `tsc` to a Node target would need its own step; Workers hosts do not.)
+
+To use an unreleased commit, pin it: `bun add github:vikramrojo/cogens#<commit>`.
 
 ## Quick start
 
@@ -35,7 +39,7 @@ Define one owned type and read an entry back as its owner. You need [Bun](https:
 ```sh
 mkdir hello && cd hello
 bun init -y
-bun add github:vikramrojo/coauthcms#<commit>
+bun add cogens
 bun add -d miniflare @cloudflare/workers-types
 ```
 
@@ -44,7 +48,7 @@ Save as `hello.ts`:
 ```ts
 import { readFileSync } from 'node:fs';
 import { Miniflare } from 'miniflare';
-import { contentType, createCms, field, type AccessContext, type Principal } from 'coauthcms';
+import { contentType, createCms, field, type AccessContext, type Principal } from 'cogens';
 
 // Your own kind of caller. The store never reads a cookie; you decide who is calling.
 interface Member { kind: 'member'; id: string }
@@ -69,7 +73,7 @@ const note = contentType({
 // An in-memory D1 with the package's migration applied (on Cloudflare, `wrangler d1 migrations apply` does this).
 const mf = new Miniflare({ modules: true, script: 'export default {}', d1Databases: { DB: 'hello' } });
 const db = (await mf.getD1Database('DB')) as unknown as D1Database;
-const migration = readFileSync('node_modules/coauthcms/migrations/0001_entries.sql', 'utf8');
+const migration = readFileSync('node_modules/cogens/migrations/0001_entries.sql', 'utf8');
 for (const statement of migration.split('\n').filter(l => !l.trim().startsWith('--')).join('\n').split(';')) {
   if (statement.trim()) await db.prepare(statement).run();
 }
@@ -126,7 +130,7 @@ An entry has the type's fields in `data` and these built-in columns: `id`, `owne
 A caller is a `Principal`: three built-in kinds and any you add.
 
 ```ts
-import { admin, anonymous, system } from 'coauthcms';
+import { admin, anonymous, system } from 'cogens';
 
 admin();            // { kind: 'admin' }; the operator
 anonymous;          // { kind: 'anonymous' }
@@ -211,10 +215,10 @@ A type declared `service: { readOnly: true }` is never stored in `entries`: it n
 
 ## The policy matrix
 
-`policyMatrix` (from `coauthcms` or `coauthcms/testing`) is for your own tests. Name sample callers and what each should be able to do on each type; it asserts every operation on every type (anything unlisted must be denied) and that the rules packed for the browser (`cms.access.rulesFor`) agree with what the engine enforces, row by row.
+`policyMatrix` (from `cogens` or `cogens/testing`) is for your own tests. Name sample callers and what each should be able to do on each type; it asserts every operation on every type (anything unlisted must be denied) and that the rules packed for the browser (`cms.access.rulesFor`) agree with what the engine enforces, row by row.
 
 ```ts
-import { policyMatrix } from 'coauthcms/testing';
+import { policyMatrix } from 'cogens/testing';
 
 policyMatrix({
   cms,
@@ -229,7 +233,7 @@ It uses no test framework; it throws `PolicyMismatch` naming each caller, type a
 ## The admin
 
 ```ts
-import { createAdmin } from 'coauthcms/admin';
+import { createAdmin } from 'cogens/admin';
 
 const host = new Hono().route('/admin', createAdmin({
   cms,
@@ -250,7 +254,7 @@ Build the editor into your static folder (it needs `@milkdown/crepe`, an optiona
 
 ```sh
 bun add -d @milkdown/crepe
-bun run node_modules/coauthcms/scripts/build-admin-editor.ts public
+bun run node_modules/cogens/scripts/build-admin-editor.ts public
 ```
 
 It writes `admin-editor.js`, `admin-editor.css`, `admin-editor-dark.css` and `admin-editor.LICENSES.txt`, the licence texts of the packages bundled (the module's banner names it; serve it beside the module). The editor has no syntax of its own beyond markdown; a host adds its own with a plugin module.
@@ -298,7 +302,7 @@ export default function (builder, context) {
 ```
 
 ```sh
-bun run node_modules/coauthcms/scripts/build-admin-editor.ts public --plugins ./editor-plugin.js
+bun run node_modules/cogens/scripts/build-admin-editor.ts public --plugins ./editor-plugin.js
 ```
 
 `remark-directive` also reads any other `:word` in prose as a directive, so a real plugin should turn the ones it does not own back into text, as `test/fixtures/mention-plugin.js` does. The editor module's `createEditor` returns `{ getMarkdown, editor }`.
@@ -309,7 +313,7 @@ bun run node_modules/coauthcms/scripts/build-admin-editor.ts public --plugins ./
 import {
   createPrincipalResolver, passwordRoutes, createSession, readSession, endSession, revokeSessions,
   mintHandoffToken, exchangeHandoffToken, purgeExpiredSessions, purgeExpiredHandoffTokens, sha256Hex
-} from 'coauthcms/auth';
+} from 'cogens/auth';
 ```
 
 - **Sessions** are rows in `sessions` named by a signed cookie that holds only a random id. A row says whose session it is (`ownerId`, an opaque string, null for the operator), its `kind` (`admin`, or whatever you call it), its `method` (`password`, `handoff`) and when it ends. The signing key is at least 32 characters and is never a password. `revokeSessions(db, { ownerId, kind })` signs out everywhere and refuses to run with neither.
@@ -321,11 +325,11 @@ The package never learns what an owner is. It imports neither core nor admin.
 
 ## Testing with a database
 
-`createTestDb` (from `coauthcms/testing`) starts a Miniflare D1 and R2 bucket, applies the package's own migrations (`0001_entries.sql`, `auth/0001_sessions.sql`) and then each SQL file you list (paths from the working directory), and returns `{ db, r2, dispose }`. Miniflare is an optional peer dependency, imported only when the function runs: `bun add -d miniflare`.
+`createTestDb` (from `cogens/testing`) starts a Miniflare D1 and R2 bucket, applies the package's own migrations (`0001_entries.sql`, `auth/0001_sessions.sql`) and then each SQL file you list (paths from the working directory), and returns `{ db, r2, dispose }`. Miniflare is an optional peer dependency, imported only when the function runs: `bun add -d miniflare`.
 
 ```ts
-import { createTestDb } from 'coauthcms/testing';
-import { migrationLines } from 'coauthcms/migrations-tool';
+import { createTestDb } from 'cogens/testing';
+import { migrationLines } from 'cogens/migrations-tool';
 
 const t = await createTestDb({ migrations: ['migrations/0002_my_types.sql'] });
 const cms = createCms({ config, db: t.db });
@@ -333,20 +337,20 @@ const cms = createCms({ config, db: t.db });
 await t.dispose();
 ```
 
-`migrationLines(types)` returns the SQL lines `coauthcms-print-migration` prints for a list of content types, so a test can compare them with your migration file. The scripts also resolve by name: `coauthcms/scripts/print-migration.ts`.
+`migrationLines(types)` returns the SQL lines `cogens-print-migration` prints for a list of content types, so a test can compare them with your migration file. The scripts also resolve by name: `cogens/scripts/print-migration.ts`.
 
 ## Migrations
 
 SQL files a host applies, in this order (copy them into your Wrangler `migrations_dir` under numbers that fit, as `examples/worker/migrations` does, or run them with `wrangler d1 execute`):
 
 1. `migrations/0001_entries.sql`: `entries` (Koguma's columns plus `owner_id`, `parent_id`, `sort_key`, `parent_status`), `assets` (plus `owner_id`) and their indexes.
-2. `migrations/auth/0001_sessions.sql`, only if you import `coauthcms/auth`: `sessions`, `handoff_tokens`, `identities`, `auth_attempts`, `auth_meta`.
+2. `migrations/auth/0001_sessions.sql`, only if you import `cogens/auth`: `sessions`, `handoff_tokens`, `identities`, `auth_attempts`, `auth_meta`.
 3. The lines for your own types' indexed fields, which `print-migration` prints for your config.
 
 A rule or `where` may name only the built-in columns and a type's `indexed` fields; an indexed field is a virtual generated column over the entry's JSON (SQLite's `ALTER TABLE ADD COLUMN` allows only virtual ones, and they can be indexed), plus a partial unique index on `(content_type, slug)` for types with `uniqueSlug`. Print them from a config file whose default export is `{ contentTypes }` (what `defineConfig` returns):
 
 ```sh
-bunx coauthcms-print-migration site.config.ts
+bunx cogens-print-migration site.config.ts
 ```
 
 Put the printed lines in a migration of your own. At startup, on first use, the store compares them with `PRAGMA table_xinfo(entries)` and fails naming the type and field if one is missing.
@@ -355,9 +359,9 @@ Put the printed lines in a migration of your own. At startup, on first use, the 
 
 ## The import boundary
 
-- `coauthcms` (core) imports `hono`, `@casl/ability` and `@cfworker/json-schema` and nothing else.
-- `coauthcms/admin` imports core and `hono`.
-- `coauthcms/auth` imports `hono` only.
+- `cogens` (core) imports `hono`, `@casl/ability` and `@cfworker/json-schema` and nothing else.
+- `cogens/admin` imports core and `hono`.
+- `cogens/auth` imports `hono` only.
 - Only files under `src/core/store` import `src/core/store/sql.ts`, the one file that names the tables holding entries and assets, so a query without an access decision cannot be written from outside.
 - Plain folders under `src/`, no workspaces. Your Worker's bundle includes only the entry points you import.
 

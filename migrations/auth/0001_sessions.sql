@@ -1,5 +1,5 @@
--- coauthcms/auth: the tables of sessions, handoff tokens, identities and the
--- password sign-in. Needed only by a host that imports `coauthcms/auth`;
+-- cogens/auth: the tables of sessions, handoff tokens, identities and the
+-- password sign-in. Needed only by a host that imports `cogens/auth`;
 -- independent of 0001_entries.sql.
 
 -- Sessions: a row behind each signed cookie. kind is who the session is for

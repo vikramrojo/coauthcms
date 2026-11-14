@@ -34,8 +34,8 @@ export async function createTestDb(options: TestDbOptions = {}): Promise<TestDb>
   const mf = new Miniflare({
     modules: true,
     script: 'export default {}',
-    d1Databases: { DB: 'coauthcms-test-db' },
-    r2Buckets: { FILES: 'coauthcms-test-files' }
+    d1Databases: { DB: 'cogens-test-db' },
+    r2Buckets: { FILES: 'cogens-test-files' }
   });
   const db = (await mf.getD1Database('DB')) as unknown as D1Database;
   const r2 = (await mf.getR2Bucket('FILES')) as unknown as R2Bucket;

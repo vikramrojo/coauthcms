@@ -2,7 +2,7 @@
  * Builds the admin's markdown editor (Milkdown Crepe, as one static module) and
  * writes it where the host serves its static files:
  *
- *   bun run node_modules/coauthcms/scripts/build-admin-editor.ts <outDir> [--plugins <module>]
+ *   bun run node_modules/cogens/scripts/build-admin-editor.ts <outDir> [--plugins <module>]
  *
  * writes <outDir>/admin-editor.js, admin-editor.css, admin-editor-dark.css and
  * admin-editor.LICENSES.txt (the licence texts of every package in the bundle,
@@ -18,7 +18,7 @@
  * module imports its own Milkdown packages from the host's node_modules.
  * Without it the editor has no syntax of the host's.
  *
- * The build needs `@milkdown/crepe`, an optional peer dependency of coauthcms:
+ * The build needs `@milkdown/crepe`, an optional peer dependency of cogens:
  * add it to the host (`bun add -d @milkdown/crepe`). Nothing in the Worker
  * imports the editor or Crepe.
  */
@@ -38,16 +38,16 @@ function packageRoot(input: string): string | null {
   return input.slice(0, at + marker.length) + name;
 }
 
-const PLUGIN_MODULE = 'coauthcms-editor-plugin';
+const PLUGIN_MODULE = 'cogens-editor-plugin';
 
-/** Resolves the entry's `coauthcms-editor-plugin` import to the host's module, or to an empty one. */
+/** Resolves the entry's `cogens-editor-plugin` import to the host's module, or to an empty one. */
 function pluginResolver(plugin: string | null): Bun.BunPlugin {
   return {
-    name: 'coauthcms-editor-plugin',
+    name: 'cogens-editor-plugin',
     setup(build) {
-      build.onResolve({ filter: /^coauthcms-editor-plugin$/ }, () =>
-        plugin ? { path: plugin } : { path: PLUGIN_MODULE, namespace: 'coauthcms-empty' });
-      build.onLoad({ filter: /.*/, namespace: 'coauthcms-empty' }, () => ({ contents: 'export default undefined;', loader: 'js' }));
+      build.onResolve({ filter: /^cogens-editor-plugin$/ }, () =>
+        plugin ? { path: plugin } : { path: PLUGIN_MODULE, namespace: 'cogens-empty' });
+      build.onLoad({ filter: /.*/, namespace: 'cogens-empty' }, () => ({ contents: 'export default undefined;', loader: 'js' }));
     }
   };
 }
@@ -67,7 +67,7 @@ async function notices(entries: string[], out: string, plugin: string | null): P
   const list: Notice[] = [];
   for (const dir of roots) {
     const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name: string; version: string; license?: string };
-    if (pkg.name === 'coauthcms') continue; // this package's own editor files, under the host's node_modules
+    if (pkg.name === 'cogens') continue; // this package's own editor files, under the host's node_modules
     const file = readdirSync(dir).find(f => /^(licen[sc]e|copying)(\.|$)/i.test(f));
     if (!file) throw new Error(`${pkg.name} ${pkg.version} has no licence file in ${dir}; add its text here by hand before shipping.`);
     list.push({ name: pkg.name, version: pkg.version, license: pkg.license ?? 'see text', text: readFileSync(join(dir, file), 'utf8').trim() });
@@ -75,7 +75,7 @@ async function notices(entries: string[], out: string, plugin: string | null): P
   list.sort((a, b) => a.name.localeCompare(b.name));
   const header = [
     'Third-party notices for admin-editor.js, admin-editor.css and admin-editor-dark.css',
-    "(coauthcms's admin markdown editor, Milkdown Crepe and the packages it bundles).",
+    "(cogens's admin markdown editor, Milkdown Crepe and the packages it bundles).",
     `${list.length} packages. Written by scripts/build-admin-editor.ts; do not edit by hand.`,
     'DOMPurify is dual-licensed MPL-2.0 or Apache-2.0 and is used here under Apache-2.0.'
   ].join('\n');
@@ -140,7 +140,7 @@ await build(join(HERE, 'entry.js'), out, 'admin-editor.js', {
   banner: '/*! Third-party notices: /admin-editor.LICENSES.txt */',
   plugins: [pluginResolver(plugin)]
 });
-const scratch = mkdtempSync(join(tmpdir(), 'coauthcms-editor-'));
+const scratch = mkdtempSync(join(tmpdir(), 'cogens-editor-'));
 try {
   const light = stylesheet('editor.css', scratch);
   const dark = stylesheet('editor-dark.css', scratch);

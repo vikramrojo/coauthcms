@@ -1,6 +1,6 @@
 /**
- * coauthcms/admin: the server-rendered admin pages.
- * May import `coauthcms` core and `hono`, nothing else of ours.
+ * cogens/admin: the server-rendered admin pages.
+ * May import `cogens` core and `hono`, nothing else of ours.
  *
  *   app.route('/admin', createAdmin({ cms, resolvePrincipal, mount: '/admin' }));
  *

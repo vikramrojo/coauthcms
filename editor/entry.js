@@ -9,7 +9,7 @@ import { linkTooltip } from '@milkdown/crepe/feature/link-tooltip';
 import { listItem } from '@milkdown/crepe/feature/list-item';
 import { toolbar } from '@milkdown/crepe/feature/toolbar';
 // Resolved by scripts/build-admin-editor.ts: the host's plugin module given by --plugins, else a module with no default.
-import plugin from 'coauthcms-editor-plugin';
+import plugin from 'cogens-editor-plugin';
 
 /**
  * Puts an editor in `root` holding `markdown`; `context` is `{ type, field }`, the content type id and field name of the

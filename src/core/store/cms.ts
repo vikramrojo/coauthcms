@@ -153,14 +153,14 @@ export function createCms<H extends HostPrincipal = never>(options: CmsOptions<H
 async function check(db: D1Database, types: ContentType<any>[]): Promise<void> {
   const columns = new Map((await entryColumns(db)).map(c => [c.name, c.hidden]));
   for (const name of ADDED_COLUMNS) {
-    if (!columns.has(name)) throw new ConfigError(`The entries table has no column "${name}". Apply coauthcms's migrations/0001_entries.sql (or koguma-upgrade.sql on a Koguma database).`, undefined, name);
+    if (!columns.has(name)) throw new ConfigError(`The entries table has no column "${name}". Apply cogens's migrations/0001_entries.sql (or koguma-upgrade.sql on a Koguma database).`, undefined, name);
   }
   for (const type of types) {
     if (type.service) continue;
     for (const field of type.indexed) {
       if (!columns.has(indexedColumn(field))) {
         throw new ConfigError(
-          `Type "${type.id}" indexes "${field}", but the entries table has no column "${indexedColumn(field)}". Print the lines to apply with coauthcms-print-migration (scripts/print-migration.ts).`,
+          `Type "${type.id}" indexes "${field}", but the entries table has no column "${indexedColumn(field)}". Print the lines to apply with cogens-print-migration (scripts/print-migration.ts).`,
           type.id,
           field
         );

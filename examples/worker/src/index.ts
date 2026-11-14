@@ -1,5 +1,5 @@
 /**
- * The smallest useful coauthcms host: one owned type (a `note` with a title and a body, one owner per row), a
+ * The smallest useful cogens host: one owned type (a `note` with a title and a body, one owner per row), a
  * host principal kind `member` resolved from a session cookie, the admin at /admin, and two JSON routes that create
  * and list the caller's own notes through `content.as`.
  *
@@ -8,15 +8,15 @@
  * session at `GET /signin?token=...`. The operator signs in at /admin with the password in `KOGUMA_SECRET`.
  */
 import { Hono, type Context } from 'hono';
-import { contentType, createCms, field, type AccessContext, type Cms, type Principal } from 'coauthcms';
-import { createAdmin, type AdminSession } from 'coauthcms/admin';
+import { contentType, createCms, field, type AccessContext, type Cms, type Principal } from 'cogens';
+import { createAdmin, type AdminSession } from 'cogens/admin';
 import {
   createPrincipalResolver,
   exchangeHandoffToken,
   mintHandoffToken,
   passwordRoutes,
   type SessionConfig
-} from 'coauthcms/auth';
+} from 'cogens/auth';
 
 export interface Env {
   DB: D1Database;

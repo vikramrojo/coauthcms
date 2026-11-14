@@ -1,8 +1,8 @@
--- coauthcms: the content store's tables. Apply this first on a new database.
+-- cogens: the content store's tables. Apply this first on a new database.
 --
 -- `entries` holds every content type's rows (the fields as JSON in `data`) and
 -- `assets` the media rows. The first nine columns of `entries` are Koguma's own;
--- the last four are coauthcms's:
+-- the last four are cogens's:
 --   owner_id       who owns the row. The store compares it and gives it no other meaning.
 --   parent_id      the entry this one belongs to (a type that names a `parent`).
 --   sort_key       orders children under a parent.

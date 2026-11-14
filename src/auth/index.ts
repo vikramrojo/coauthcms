@@ -1,7 +1,7 @@
 /**
- * coauthcms/auth: sessions, handoff tokens and the operator's password sign-in.
- * Imports neither `coauthcms` core nor
- * `coauthcms/admin`; it gives the host a principal and the store takes it.
+ * cogens/auth: sessions, handoff tokens and the operator's password sign-in.
+ * Imports neither `cogens` core nor
+ * `cogens/admin`; it gives the host a principal and the store takes it.
  */
 export {
   clearSessionCookie,

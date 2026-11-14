@@ -1,4 +1,4 @@
--- coauthcms: for a database that already holds Koguma's `entries` and `assets`
+-- cogens: for a database that already holds Koguma's `entries` and `assets`
 -- (Koguma's 0001) and not 0001_entries.sql. Adds the ownership columns and
 -- indexes. Run it once: ADD COLUMN fails on a column that is there, which is how
 -- you learn it was already applied.

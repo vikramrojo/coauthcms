@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "coauthcms",
+      "name": "cogens",
       "dependencies": {
         "@casl/ability": "7.1.3",
         "@cfworker/json-schema": "^4.1.1",

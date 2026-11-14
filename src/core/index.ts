@@ -1,5 +1,5 @@
 /**
- * coauthcms: the content store. A content type declares who owns it and who may
+ * cogens: the content store. A content type declares who owns it and who may
  * create, read, update, delete and publish it; every read and write names its
  * caller (`cms.content.as(principal)`), and a read the caller may not make
  * answers as a missing row.

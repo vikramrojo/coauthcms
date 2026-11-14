@@ -1,15 +1,29 @@
 {
-  "name": "coauthcms",
-  "version": "0.1.1",
-  "private": true,
+  "name": "cogens",
+  "version": "0.2.0",
   "description": "A light multi-tenant content store for Cloudflare Workers: every entry may have an owner and every query passes an access check. Forked from Koguma.",
   "license": "MIT",
   "type": "module",
   "author": "Vikram Rojo",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vikramrojo/coauthcms.git"
+    "url": "git+https://github.com/vikramrojo/cogens.git"
   },
+  "bugs": {
+    "url": "https://github.com/vikramrojo/cogens/issues"
+  },
+  "homepage": "https://github.com/vikramrojo/cogens#readme",
+  "keywords": [
+    "cms",
+    "cloudflare",
+    "workers",
+    "d1",
+    "hono",
+    "multi-tenant",
+    "access-control",
+    "casl",
+    "content-store"
+  ],
   "engines": {
     "bun": ">=1.4.4"
   },
@@ -25,7 +39,7 @@
     "./migrations/*": "./migrations/*"
   },
   "bin": {
-    "coauthcms-print-migration": "./scripts/print-migration.ts"
+    "cogens-print-migration": "./scripts/print-migration.ts"
   },
   "files": [
     "src",

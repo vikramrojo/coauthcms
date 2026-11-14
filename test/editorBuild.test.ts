@@ -6,7 +6,7 @@ import { join } from 'node:path';
 const root = join(import.meta.dir, '..');
 
 function build(...extra: string[]): string {
-  const out = mkdtempSync(join(tmpdir(), 'coauthcms-editor-test-'));
+  const out = mkdtempSync(join(tmpdir(), 'cogens-editor-test-'));
   const run = Bun.spawnSync(['bun', 'run', join(root, 'scripts/build-admin-editor.ts'), out, ...extra], { cwd: root });
   if (run.exitCode !== 0) throw new Error(`build failed: ${run.stderr.toString()}`);
   return out;
@@ -45,7 +45,7 @@ describe('the admin editor build', () => {
   }, 120_000);
 
   test('a missing plugin module stops the build', () => {
-    const out = mkdtempSync(join(tmpdir(), 'coauthcms-editor-test-'));
+    const out = mkdtempSync(join(tmpdir(), 'cogens-editor-test-'));
     const run = Bun.spawnSync(['bun', 'run', join(root, 'scripts/build-admin-editor.ts'), out, '--plugins', join(out, 'nope.js')], { cwd: root });
     rmSync(out, { recursive: true, force: true });
     expect(run.exitCode).not.toBe(0);

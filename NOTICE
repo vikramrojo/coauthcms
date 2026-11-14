@@ -1,9 +1,9 @@
-coauthcms
+cogens
 
 Copyright (c) 2026 Vikram Rojo
 Licensed under the MIT License (LICENSE).
 
-coauthcms is a fork of Koguma, a schema-driven headless CMS for Cloudflare
+cogens is a fork of Koguma, a schema-driven headless CMS for Cloudflare
 Workers, and keeps its notice:
 
   Koguma
@@ -16,7 +16,7 @@ Workers, and keeps its notice:
 What derives from Koguma: the `entries` and `assets` tables, the content-type
 and field definitions, the slug and publish handling, and the password
 sign-in's behaviour. The access engine, the store's caller model, the admin
-pages, the session tables and the rest were written for coauthcms; Koguma's
+pages, the session tables and the rest were written for cogens; Koguma's
 React dashboard, CLI and public content API are not part of it.
 
 The admin's markdown editor, built by scripts/build-admin-editor.ts, bundles
