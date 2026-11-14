@@ -1,0 +1,17 @@
+{
+  // The example host. Run it: `bun run example:migrate`, then `bunx wrangler dev -c examples/worker/wrangler.jsonc`
+  // with a .dev.vars beside this file (see .dev.vars.example).
+  "name": "coauthcms-example",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "coauthcms-example",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Applied by `wrangler d1 migrations apply`: the package's two migrations and the example's own columns.
+      "migrations_dir": "migrations"
+    }
+  ]
+}

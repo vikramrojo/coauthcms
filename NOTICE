@@ -1,0 +1,25 @@
+coauthcms
+
+Copyright (c) 2026 Vikram Rojo
+Licensed under the MIT License (LICENSE).
+
+coauthcms is a fork of Koguma, a schema-driven headless CMS for Cloudflare
+Workers, and keeps its notice:
+
+  Koguma
+  https://github.com/m4ttheweric/koguma
+  Copyright (c) 2026 Matthew Eric Goodwin
+  MIT License
+  Forked at commit 485dd0f6308e191c9ea565029ba48b52ba059eae (2026-08-03),
+  package version 2.3.11.
+
+What derives from Koguma: the `entries` and `assets` tables, the content-type
+and field definitions, the slug and publish handling, and the password
+sign-in's behaviour. The access engine, the store's caller model, the admin
+pages, the session tables and the rest were written for coauthcms; Koguma's
+React dashboard, CLI and public content API are not part of it.
+
+The admin's markdown editor, built by scripts/build-admin-editor.ts, bundles
+Milkdown Crepe and the packages it depends on (each MIT, except DOMPurify,
+which is MPL-2.0 or Apache-2.0 and used under Apache-2.0). The build writes
+their licence texts beside the bundle (admin-editor.LICENSES.txt).

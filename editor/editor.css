@@ -1,0 +1,9 @@
+/* The editor's styles: Crepe's common sheets for the features entry.js adds, then its light theme. */
+@import '%CREPE%/lib/theme/common/prosemirror.css';
+@import '%CREPE%/lib/theme/common/reset.css';
+@import '%CREPE%/lib/theme/common/block-edit.css';
+@import '%CREPE%/lib/theme/common/cursor.css';
+@import '%CREPE%/lib/theme/common/link-tooltip.css';
+@import '%CREPE%/lib/theme/common/list-item.css';
+@import '%CREPE%/lib/theme/common/toolbar.css';
+@import '%CREPE%/lib/theme/crepe/style.css';

@@ -1,0 +1,72 @@
+{
+  "name": "coauthcms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A light multi-tenant content store for Cloudflare Workers: every entry may have an owner and every query passes an access check. Forked from Koguma.",
+  "license": "MIT",
+  "type": "module",
+  "author": "Vikram Rojo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vikramrojo/coauthcms.git"
+  },
+  "engines": {
+    "bun": ">=1.4.4"
+  },
+  "packageManager": "bun@1.4.4",
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./admin": "./src/admin/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./testing": "./src/core/testing/index.ts",
+    "./package.json": "./package.json",
+    "./migrations/*": "./migrations/*"
+  },
+  "bin": {
+    "coauthcms-print-migration": "./scripts/print-migration.ts"
+  },
+  "files": [
+    "src",
+    "migrations",
+    "scripts",
+    "editor",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
+    "print-migration": "bun run scripts/print-migration.ts",
+    "build:editor": "bun run scripts/build-admin-editor.ts",
+    "example:migrate": "wrangler d1 migrations apply DB --local -c examples/worker/wrangler.jsonc",
+    "example:dev": "wrangler dev -c examples/worker/wrangler.jsonc"
+  },
+  "dependencies": {
+    "@casl/ability": "7.1.3",
+    "@cfworker/json-schema": "^4.1.1",
+    "hono": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@milkdown/crepe": "^7.23.0",
+    "remark-directive": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@milkdown/crepe": {
+      "optional": true
+    },
+    "remark-directive": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260304.0",
+    "@milkdown/crepe": "^7.23.0",
+    "@types/bun": "^1.3.0",
+    "@types/node": "^22.0.0",
+    "miniflare": "^4.20260301.1",
+    "remark-directive": "^4.0.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.71.0"
+  }
+}

@@ -1,0 +1,2 @@
+/* The dark theme's colours, linked with media="(prefers-color-scheme: dark)" after editor.css. */
+@import '%CREPE%/lib/theme/crepe-dark/style.css';

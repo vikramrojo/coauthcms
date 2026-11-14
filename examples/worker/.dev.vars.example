@@ -1,0 +1,3 @@
+KOGUMA_SECRET=change-me-operator-password
+KOGUMA_SESSION_KEY=change-me-at-least-32-characters-long-aaaa
+MEMBER_SESSION_KEY=change-me-at-least-32-characters-long-bbbb
